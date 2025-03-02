@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gráfico de Temperatura vs Tempo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.20.0/plotly.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            color: #2980b9;
+            margin-top: 25px;
+            padding-left: 10px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .parameters-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .parameters-section {
+            flex: 1;
+            min-width: 300px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .input-group label {
+            display: inline-block;
+            width: 260px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        .input-group input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 120px;
+            font-size: 16px;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+        }
+        
+        .soak-temp-group {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #27ae60;
+        }
+        
+        .soak-temp-group h3 {
+            margin-top: 0;
+            color: #27ae60;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        
+        .soak-temp-inputs {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .soak-temp-inputs .input-item {
+            display: flex;
+            align-items: center;
+        }
+        
+        .soak-temp-inputs .input-item label {
+            width: auto;
+            margin-right: 10px;
+            font-weight: normal;
+        }
+        
+        .thickness-group {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #9b59b6;
+        }
+        
+        .thickness-group h3 {
+            margin-top: 0;
+            color: #9b59b6;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        
+        button {
+            background-color: #2980b9;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            margin: 20px 0;
+            display: block;
+            width: 100%;
+        }
+        
+        button:hover {
+            background-color: #3498db;
+        }
+        
+        #chart {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+            min-height: 500px;
+        }
+        
+        .alert {
+            color: #e74c3c;
+            font-weight: bold;
+            background-color: #fadbd8;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+        
+        .info {
+            color: #2980b9;
+            font-weight: bold;
+            background-color: #ebf5fb;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+        
+        .formula-info {
+            background-color: #e8f8f5;
+            border-left: 4px solid #1abc9c;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        
+        .formula-info h3 {
+            color: #1abc9c;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        
+        #messages-container {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gráfico de Temperatura vs Tempo</h1>
+    
+    <div class="formula-info">
+        <h3>Cálculo do Tempo de Tratamento Térmico</h3>
+        <p>O tempo mínimo de patamar é calculado com base na espessura da junta utilizando a seguinte fórmula:</p>
+        <ul>
+            <li>1 hora para cada 25mm de espessura</li>
+            <li>Proporcional para frações de espessura adicional</li>
+            <li>Mínimo de 0,5 hora (30 minutos)</li>
+        </ul>
+    </div>
+    
+    <div class="parameters-container">
+        <div class="parameters-section">
+            <h2>Parâmetros Especificados</h2>
+            
+            <div class="thickness-group">
+                <h3>Espessura da Junta</h3>
+                <div class="input-group">
+                    <label for="jointThickness">Espessura da Junta (mm):</label>
+                    <input type="number" id="jointThickness" value="25" min="0" step="0.1">
+                </div>
+                <div class="input-group">
+                    <label for="calculatedSoakTime">Tempo Calculado de Patamar (h):</label>
+                    <input type="number" id="calculatedSoakTime" value="1.0" readonly>
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label for="initialTempSpec">Temperatura de Início de Registro (°C):</label>
+                <input type="number" id="initialTempSpec" value="315">
+            </div>
+            <div class="input-group">
+                <label for="finalTempSpec">Temperatura de Término de Registro (°C):</label>
+                <input type="number" id="finalTempSpec" value="315">
+            </div>
+            <div class="input-group">
+                <label for="heatRateSpec">Taxa de Aquecimento (°C/h):</label>
+                <input type="number" id="heatRateSpec" value="335">
+            </div>
+            <div class="input-group">
+                <label for="coolRateSpec">Taxa de Resfriamento (°C/h):</label>
+                <input type="number" id="coolRateSpec" value="335">
+            </div>
+            
+            <div class="soak-temp-group">
+                <h3>Temperatura de Patamar Especificado</h3>
+                <div class="soak-temp-inputs">
+                    <div class="input-item">
+                        <label for="soakTempSpecMin">Mínimo (°C):</label>
+                        <input type="number" id="soakTempSpecMin" value="705">
+                    </div>
+                    <div class="input-item">
+                        <label for="soakTempSpecMax">Máximo (°C):</label>
+                        <input type="number" id="soakTempSpecMax" value="775">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label for="soakTempSpec">Temperatura de Patamar (°C):</label>
+                <input type="number" id="soakTempSpec" value="705">
+            </div>
+            <div class="input-group">
+                <label for="soakTimeMinSpec">Tempo Mínimo de Patamar (h):</label>
+                <input type="number" id="soakTimeMinSpec" value="3.6">
+            </div>
+        </div>
+        
+        <div class="parameters-section">
+            <h2>Parâmetros Reais</h2>
+            <div class="input-group">
+                <label for="initialTempReal">Temperatura de Início de Registro (°C):</label>
+                <input type="number" id="initialTempReal" value="315">
+            </div>
+            <div class="input-group">
+                <label for="finalTempReal">Temperatura de Término de Registro (°C):</label>
+                <input type="number" id="finalTempReal" value="315">
+            </div>
+            <div class="input-group">
+                <label for="heatTimeReal">Tempo de Aquecimento (h):</label>
+                <input type="number" id="heatTimeReal" value="1.16">
+            </div>
+            
+            <div class="soak-temp-group">
+                <h3>Temperatura de Patamar Real</h3>
+                <div class="soak-temp-inputs">
+                    <div class="input-item">
+                        <label for="soakTempRealMin">Mínimo (°C):</label>
+                        <input type="number" id="soakTempRealMin" value="710">
+                    </div>
+                    <div class="input-item">
+                        <label for="soakTempRealMax">Máximo (°C):</label>
+                        <input type="number" id="soakTempRealMax" value="760">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label for="soakTempReal">Temperatura de Patamar (°C):</label>
+                <input type="number" id="soakTempReal" value="705">
+            </div>
+            <div class="input-group">
+                <label for="soakTimeReal">Tempo de Patamar Real (h):</label>
+                <input type="number" id="soakTimeReal" value="3.6">
+            </div>
+            <div class="input-group">
+                <label for="coolTimeReal">Tempo de Resfriamento (h):</label>
+                <input type="number" id="coolTimeReal" value="1.16">
+            </div>
+        </div>
+    </div>
+    
+    <button onclick="updateChart()">Atualizar Gráficos</button>
+    
+    <div id="messages-container">
+        <div id="alertMessage"></div>
+        <div id="infoMessage"></div>
+    </div>
+    
+    <div id="chart"></div>
+    
+    <script>
+        // Função para calcular o tempo mínimo de patamar com base na espessura
+        function calculateSoakTime(thickness) {
+            // 1 hora para cada 25mm, proporcional para frações, mínimo de 0,5 hora
+            const calculatedTime = (thickness / 25);
+            return Math.max(calculatedTime, 0.5);
+        }
+        
+        // Função para atualizar o tempo calculado quando a espessura muda
+        function updateCalculatedTime() {
+            const thickness = parseFloat(document.getElementById('jointThickness').value);
+            const calculatedTime = calculateSoakTime(thickness);
+            document.getElementById('calculatedSoakTime').value = calculatedTime.toFixed(2);
+            document.getElementById('soakTimeMinSpec').value = calculatedTime.toFixed(2);
+        }
+        
+        // Adicionar evento para atualizar tempo quando a espessura é alterada
+        document.getElementById('jointThickness').addEventListener('input', updateCalculatedTime);
+        
+        function updateChart() {
+            // Atualizar o tempo calculado com base na espessura
+            updateCalculatedTime();
+            
+            // Parâmetros Especificados
+            const initialTempSpec = parseFloat(document.getElementById('initialTempSpec').value);
+            const finalTempSpec = parseFloat(document.getElementById('finalTempSpec').value);
+            const heatRateSpec = parseFloat(document.getElementById('heatRateSpec').value);
+            const coolRateSpec = parseFloat(document.getElementById('coolRateSpec').value);
+            const soakTempSpec = parseFloat(document.getElementById('soakTempSpec').value);
+            const soakTempSpecMin = parseFloat(document.getElementById('soakTempSpecMin').value);
+            const soakTempSpecMax = parseFloat(document.getElementById('soakTempSpecMax').value);
+            const soakTimeMinSpec = parseFloat(document.getElementById('soakTimeMinSpec').value);
+            const jointThickness = parseFloat(document.getElementById('jointThickness').value);
+            
+            // Parâmetros Reais
+            const initialTempReal = parseFloat(document.getElementById('initialTempReal').value);
+            const finalTempReal = parseFloat(document.getElementById('finalTempReal').value);
+            const heatTimeReal = parseFloat(document.getElementById('heatTimeReal').value);
+            const soakTempReal = parseFloat(document.getElementById('soakTempReal').value);
+            const soakTempRealMin = parseFloat(document.getElementById('soakTempRealMin').value);
+            const soakTempRealMax = parseFloat(document.getElementById('soakTempRealMax').value);
+            const soakTimeReal = parseFloat(document.getElementById('soakTimeReal').value);
+            const coolTimeReal = parseFloat(document.getElementById('coolTimeReal').value);
+            
+            // Cálculo das taxas reais
+            const heatRateReal = (soakTempReal - initialTempReal) / heatTimeReal;
+            const coolRateReal = (soakTempReal - finalTempReal) / coolTimeReal;
+            
+            // Cálculo do tempo total de tratamento térmico
+            const totalTimeSpec = ((soakTempSpec - initialTempSpec) / heatRateSpec) + soakTimeMinSpec + ((soakTempSpec - finalTempSpec) / coolRateSpec);
+            const totalTimeReal = heatTimeReal + soakTimeReal + coolTimeReal;
+            
+            // Verificação de limites e alertas
+            const alertMessage = document.getElementById('alertMessage');
+            let alertText = '';
+            
+            // Verificar se o tempo de patamar mínimo calculado é respeitado
+            const calculatedSoakTime = calculateSoakTime(jointThickness);
+            if (soakTimeMinSpec < calculatedSoakTime) {
+                alertText += `<div class="alert">Alerta: O tempo mínimo de patamar especificado (${soakTimeMinSpec.toFixed(2)}h) é menor que o calculado (${calculatedSoakTime.toFixed(2)}h) para a espessura de ${jointThickness}mm.</div>`;
+            }
+            
+            if (soakTimeReal < calculatedSoakTime) {
+                alertText += `<div class="alert">Alerta: O tempo de patamar real (${soakTimeReal.toFixed(2)}h) é inferior ao calculado (${calculatedSoakTime.toFixed(2)}h) para a espessura de ${jointThickness}mm.</div>`;
+            }
+            
+            // Verificar taxas de aquecimento e resfriamento reais
+            if (heatRateReal > heatRateSpec) {
+                alertText += `<div class="alert">Alerta: Taxa de aquecimento real (${heatRateReal.toFixed(2)}°C/h) excede a taxa especificada (${heatRateSpec}°C/h).</div>`;
+            }
+            
+            if (coolRateReal > coolRateSpec) {
+                alertText += `<div class="alert">Alerta: Taxa de resfriamento real (${coolRateReal.toFixed(2)}°C/h) excede a taxa especificada (${coolRateSpec}°C/h).</div>`;
+            }
+            
+            // Verificar tempo de patamar real vs mínimo especificado
+            if (soakTimeReal < soakTimeMinSpec) {
+                alertText += '<div class="alert">Alerta: Tempo de patamar real é inferior ao mínimo especificado!</div>';
+            }
+            
+            // Verificar temperatura de início e término de controle (real vs especificado)
+            if (initialTempReal > initialTempSpec) {
+                alertText += '<div class="alert">Alerta: Temperatura de início de registro real é superior à especificada!</div>';
+            }
+            
+            if (finalTempReal > finalTempSpec) {
+                alertText += '<div class="alert">Alerta: Temperatura de término de registro real é superior à especificada!</div>';
+            }
+            
+            // Verificar temperaturas de patamar real vs especificado
+            if (soakTempRealMin < soakTempSpecMin) {
+                alertText += `<div class="alert">Alerta: Temperatura mínima de patamar real (${soakTempRealMin}°C) é inferior à mínima especificada (${soakTempSpecMin}°C)!</div>`;
+            }
+            
+            if (soakTempRealMax > soakTempSpecMax) {
+                alertText += `<div class="alert">Alerta: Temperatura máxima de patamar real (${soakTempRealMax}°C) excede a máxima especificada (${soakTempSpecMax}°C)!</div>`;
+            }
+            
+            alertMessage.innerHTML = alertText;
+            
+            // Exibir informações sobre o tempo total de tratamento térmico
+            const infoMessage = document.getElementById('infoMessage');
+            infoMessage.innerHTML = `
+                <div class="info">Espessura da junta: ${jointThickness} mm</div>
+                <div class="info">Tempo mínimo de patamar calculado: ${calculatedSoakTime.toFixed(2)} horas</div>
+                <div class="info">Tempo total de tratamento térmico (Especificado): ${totalTimeSpec.toFixed(2)} horas</div>
+                <div class="info">Tempo total de tratamento térmico (Real): ${totalTimeReal.toFixed(2)} horas</div>
+                <div class="info">Faixa de temperatura de patamar especificada: ${soakTempSpecMin}°C - ${soakTempSpecMax}°C</div>
+                <div class="info">Faixa de temperatura de patamar real: ${soakTempRealMin}°C - ${soakTempRealMax}°C</div>
+            `;
+            
+            // Gerar dados para os gráficos
+            const timePointsSpec = [
+                0,
+                (soakTempSpec - initialTempSpec) / heatRateSpec,
+                (soakTempSpec - initialTempSpec) / heatRateSpec + soakTimeMinSpec,
+                (soakTempSpec - initialTempSpec) / heatRateSpec + soakTimeMinSpec + (soakTempSpec - finalTempSpec) / coolRateSpec
+            ];
+            
+            const tempPointsSpec = [initialTempSpec, soakTempSpec, soakTempSpec, finalTempSpec];
+            
+            const timePointsReal = [0, heatTimeReal, heatTimeReal + soakTimeReal, heatTimeReal + soakTimeReal + coolTimeReal];
+            const tempPointsReal = [initialTempReal, soakTempReal, soakTempReal, finalTempReal];
+            
+            // Adicionar faixas de temperatura permitidas para o patamar
+            const patamarStartTime = (soakTempSpec - initialTempSpec) / heatRateSpec;
+            const patamarEndTime = patamarStartTime + soakTimeMinSpec;
+            
+            // Traços para os gráficos
+            const traceSpec = {
+                x: timePointsSpec,
+                y: tempPointsSpec,
+                mode: 'lines+markers',
+                type: 'scatter',
+                name: 'Especificado',
+                line: { 
+                    color: '#3498db',
+                    width: 3
+                },
+                marker: {
+                    size: 10,
+                    color: '#2980b9'
+                }
+            };
+            
+            const traceReal = {
+                x: timePointsReal,
+                y: tempPointsReal,
+                mode: 'lines+markers',
+                type: 'scatter',
+                name: 'Real',
+                line: { 
+                    color: '#e74c3c',
+                    width: 3
+                },
+                marker: {
+                    size: 10,
+                    color: '#c0392b'
+                }
+            };
+            
+            // Faixa de temperatura especificada para o patamar
+            const soakTempRangeSpec = {
+                x: [patamarStartTime, patamarStartTime, patamarEndTime, patamarEndTime],
+                y: [soakTempSpecMin, soakTempSpecMax, soakTempSpecMax, soakTempSpecMin],
+                fill: 'toself',
+                fillcolor: 'rgba(39, 174, 96, 0.2)',
+                line: {
+                    color: 'rgba(39, 174, 96, 0.5)',
+                    width: 1,
+                    dash: 'dash'
+                },
+                name: 'Faixa Especificada do Patamar',
+                showlegend: true,
+                type: 'scatter'
+            };
+            
+            // Faixa de temperatura real para o patamar
+            const soakTempRangeReal = {
+                x: [heatTimeReal, heatTimeReal, heatTimeReal + soakTimeReal, heatTimeReal + soakTimeReal],
+                y: [soakTempRealMin, soakTempRealMax, soakTempRealMax, soakTempRealMin],
+                fill: 'toself',
+                fillcolor: 'rgba(231, 76, 60, 0.2)',
+                line: {
+                    color: 'rgba(231, 76, 60, 0.5)',
+                    width: 1,
+                    dash: 'dash'
+                },
+                name: 'Faixa Real do Patamar',
+                showlegend: true,
+                type: 'scatter'
+            };
+            
+            // Layout do gráfico
+            const layout = {
+                title: {
+                    text: 'Perfil de Temperatura vs Tempo',
+                    font: {
+                        size: 24,
+                        color: '#2c3e50'
+                    }
+                },
+                xaxis: { 
+                    title: {
+                        text: 'Tempo (h)',
+                        font: {
+                            size: 16,
+                            color: '#2c3e50'
+                        }
+                    },
+                    gridcolor: '#ecf0f1'
+                },
+                yaxis: { 
+                    title: {
+                        text: 'Temperatura (°C)',
+                        font: {
+                            size: 16,
+                            color: '#2c3e50'
+                        }
+                    },
+                    gridcolor: '#ecf0f1'
+                },
+                plot_bgcolor: 'white',
+                paper_bgcolor: 'white',
+                margin: {
+                    l: 60,
+                    r: 30,
+                    b: 60,
+                    t: 80,
+                    pad: 4
+                },
+                legend: {
+                    x: 0.02,
+                    y: 0.98,
+                    bgcolor: 'rgba(255, 255, 255, 0.8)',
+                    bordercolor: '#ddd',
+                    borderwidth: 1
+                },
+                hovermode: 'closest'
+            };
+            
+            // Renderizar o gráfico
+            Plotly.newPlot('chart', [traceSpec, traceReal, soakTempRangeSpec, soakTempRangeReal], layout);
+        }
+        
+        // Inicializar a página
+        window.onload = function() {
+            updateCalculatedTime();
+            updateChart();
+        };
+    </script>
+</body>
+</html>
